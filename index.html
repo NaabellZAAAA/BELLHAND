@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quiz Game Pro</title>
+
+<style>
+body{
+    margin:0;
+    font-family:sans-serif;
+    background:linear-gradient(135deg,#4e73df,#1cc88a);
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    height:100vh;
+}
+
+.phone{
+    width:360px;
+    height:640px;
+    background:white;
+    border-radius:35px;
+    box-shadow:0 20px 50px rgba(0,0,0,0.4);
+    overflow:hidden;
+    display:flex;
+    flex-direction:column;
+    position:relative;
+}
+
+.header{
+    background:#4e73df;
+    color:white;
+    padding:15px;
+    text-align:center;
+    font-weight:bold;
+}
+
+.screen{
+    flex:1;
+    padding:20px;
+    display:none;
+    flex-direction:column;
+    justify-content:center;
+    text-align:center;
+}
+
+.active{
+    display:flex;
+}
+
+button{
+    margin:8px 0;
+    padding:12px;
+    border:none;
+    border-radius:12px;
+    background:#4e73df;
+    color:white;
+    font-size:16px;
+    cursor:pointer;
+    transition:0.2s;
+}
+
+button:hover{
+    background:#2e59d9;
+    transform:scale(1.05);
+}
+
+.show-correct{
+    background:#1cc88a !important;
+}
+
+.wrong{
+    background:#e74a3b !important;
+}
+
+.result-box{
+    margin-top:15px;
+    font-weight:bold;
+    min-height:30px;
+    opacity:0;
+    transition:0.3s;
+}
+
+.show-message{
+    opacity:1;
+}
+
+.correct-text{ color:#1cc88a; }
+.wrong-text{ color:#e74a3b; }
+
+.progress{
+    height:8px;
+    background:#ddd;
+    border-radius:5px;
+    overflow:hidden;
+    margin-bottom:15px;
+}
+
+.progress-bar{
+    height:100%;
+    width:0%;
+    background:#1cc88a;
+    transition:0.3s;
+}
+
+.confetti{
+    position:absolute;
+    width:8px;
+    height:8px;
+    top:50%;
+    left:50%;
+    animation:explode 1s forwards;
+}
+
+@keyframes explode{
+    to{
+        transform:translate(var(--x),var(--y));
+        opacity:0;
+    }
+}
+</style>
+</head>
+<body>
+
+<div class="phone">
+
+<div class="header">🎮 Quiz Game Pro</div>
+
+<div id="menuScreen" class="screen active">
+    <h2>เริ่มเกม</h2>
+    <p>เลเวล: <span id="levelDisplay">1</span></p>
+    <button onclick="startGame()">เริ่ม</button>
+</div>
+
+<div id="gameScreen" class="screen">
+    <div class="progress">
+        <div class="progress-bar" id="progressBar"></div>
+    </div>
+    <h3 id="question"></h3>
+    <div id="answers"></div>
+    <div id="resultMessage" class="result-box"></div>
+</div>
+
+<div id="summaryScreen" class="screen">
+    <h2 id="summaryText"></h2>
+    <button onclick="nextLevel()">ด่านถัดไป</button>
+    <button onclick="goMenu()">กลับหน้าแรก</button>
+</div>
+
+</div>
+
+<script>
+
+const levels = [
+
+/* ===== LEVEL 1 ===== */
+[
+{question:"เต้มีเมียกี่คนนนนน",answers:["3","4","5","6"],correct:3},
+{question:"บอสมีภรรอยู่ที่จังหวัดใดดดด",answers:["เชียงใหม่","กรุงเทพ","ภูเก็ต","ลำปาง"],correct:2},
+{question:"คุณสุทัศน์เป็นคนดีมากๆใช่หรือไม่",answers:["ใช่","จริงที่สุด","จริงโครตๆ","อย่ามาตอแหล"],correct:3},
+{question:"คุณเจมส์เคยแอบเมียเติมเกมไปทั้งหมดกี่ครั้ง",answers:["5","6","2","ไม่เคยเลย"],correct:1},
+{question:"ก๊อตมีเด็กที่ซุกไว้เท่าไหร่",answers:["2","10","3","คนดีไม่มีหรอก"],correct:2},
+{question:"ระหว่างเกมกับเมียคุณเลือกที่จะ?",answers:["เมียอยู่แล้วรักเขา","เกมสิเมียมันขี้บ่น","ไม่มีข้อถูก","ไม่ออกความเห็น"],correct:[0,1,2,3]},
+{question:"ถ้าแผ่นดิสแดงออกคุณเลือกที่จะให้ใคร",answers:["ตัวเอง","เพื่อนสนิท","โยนทิ้งไม่ให้ใคร","เมียน้อย"],correct:3},
+{question:"1 สัปดาห์มีกี่วัน?",answers:["5","6","7","8"],correct:2},
+{question:"ดวงอาทิตย์ขึ้นทาง?",answers:["เหนือ","ใต้","ตะวันออก","ตะวันตก"],correct:2},
+{question:"10÷5=?",answers:["1","2","3","4"],correct:1}
+],
+
+/* ===== LEVEL 2 ===== */
+[
+{question:"12+8=?",answers:["18","19","20","21"],correct:2},
+{question:"สัตว์เลี้ยงลูกด้วยนม?",answers:["ปลา","งู","วัว","กบ"],correct:2},
+{question:"15-7=?",answers:["6","7","8","9"],correct:2},
+{question:"โลกอยู่ในระบบ?",answers:["กาแล็กซี","ดาวหาง","อุกกาบาต","เมฆ"],correct:0},
+{question:"6x4=?",answers:["20","22","24","26"],correct:2},
+{question:"จังหวัดภูเก็ตอยู่ภาค?",answers:["เหนือ","ใต้","กลาง","อีสาน"],correct:1},
+{question:"100÷10=?",answers:["5","10","15","20"],correct:1},
+{question:"สีที่ผสม แดง+เหลือง ได้สี?",answers:["ส้ม","เขียว","ม่วง","ฟ้า"],correct:0},
+{question:"9x3=?",answers:["21","24","27","30"],correct:2},
+{question:"ประเทศไทยมีกี่ฤดู?",answers:["2","3","4","5"],correct:1}
+],
+
+/* ===== LEVEL 3 ===== */
+[
+{question:"25x2=?",answers:["40","45","50","55"],correct:2},
+{question:"รากที่สองของ 49?",answers:["6","7","8","9"],correct:1},
+{question:"30÷5=?",answers:["5","6","7","8"],correct:1},
+{question:"เมืองหลวงญี่ปุ่น?",answers:["ปักกิ่ง","โซล","โตเกียว","ไทเป"],correct:2},
+{question:"8x7=?",answers:["54","55","56","57"],correct:2},
+{question:"ดาวเคราะห์สีแดง?",answers:["โลก","ดาวศุกร์","ดาวอังคาร","ดาวเสาร์"],correct:2},
+{question:"100-45=?",answers:["45","50","55","60"],correct:2},
+{question:"12x12=?",answers:["124","144","154","164"],correct:1},
+{question:"ธงชาติไทยมีกี่สี?",answers:["2","3","4","5"],correct:1},
+{question:"365 วันคือ?",answers:["1 เดือน","1 ปี","2 ปี","1 สัปดาห์"],correct:1}
+]
+
+];
+
+let level=1;
+let current=0;
+let score=0;
+
+function startGame(){
+    current=0;
+    score=0;
+    switchScreen("gameScreen");
+    showQuestion();
+}
+
+function showQuestion(){
+    const q=levels[level-1][current];
+    document.getElementById("question").innerText=q.question;
+
+    const answersDiv=document.getElementById("answers");
+    answersDiv.innerHTML="";
+
+    q.answers.forEach((a,i)=>{
+        const btn=document.createElement("button");
+        btn.innerText=a;
+        btn.onclick=()=>checkAnswer(i);
+        answersDiv.appendChild(btn);
+    });
+
+    updateProgress();
+}
+
+function checkAnswer(selectedIndex){
+
+    const q=levels[level-1][current];
+    const buttons=document.querySelectorAll("#answers button");
+    const resultBox=document.getElementById("resultMessage");
+
+    buttons.forEach(b=>b.disabled=true);
+
+    const correctAnswers=Array.isArray(q.correct)?q.correct:[q.correct];
+
+    if(correctAnswers.includes(selectedIndex)){
+        score++;
+        buttons[selectedIndex].classList.add("show-correct");
+        createConfetti();
+        resultBox.innerText="🎉 ถูกต้อง!เก่งนะเนี่ยซื่อสัตย์ต่อตัวเองก็ทำได้นิ";
+        resultBox.className="result-box show-message correct-text";
+    }else{
+        buttons[selectedIndex].classList.add("wrong");
+        correctAnswers.forEach(i=>{
+            buttons[i].classList.add("show-correct");
+        });
+        resultBox.innerText="❌ ผิดนะ! คำตอบที่ถูกคือข้อสีเขียว ไม่ซื่อสัตย์กับตัวเองเลยเห้อ 😔";
+        resultBox.className="result-box show-message wrong-text";
+    }
+
+    setTimeout(()=>{
+        resultBox.className="result-box";
+        resultBox.innerText="";
+        current++;
+        if(current<levels[level-1].length){
+            showQuestion();
+        }else{
+            showSummary();
+        }
+    },1500);
+}
+
+function showSummary(){
+    switchScreen("summaryScreen");
+    document.getElementById("summaryText").innerText=
+        "คุณได้ "+score+" / "+levels[level-1].length+" คะแนน";
+}
+
+function nextLevel(){
+    if(level<levels.length){
+        level++;
+        document.getElementById("levelDisplay").innerText=level;
+        startGame();
+    }else{
+        alert("คุณผ่านครบทุกด่านแล้ว 🏆");
+        goMenu();
+    }
+}
+
+function goMenu(){
+    switchScreen("menuScreen");
+}
+
+function switchScreen(id){
+    document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
+    document.getElementById(id).classList.add("active");
+}
+
+function updateProgress(){
+    const percent=(current/levels[level-1].length)*100;
+    document.getElementById("progressBar").style.width=percent+"%";
+}
+
+function createConfetti(){
+    for(let i=0;i<20;i++){
+        const div=document.createElement("div");
+        div.className="confetti";
+        div.style.background=`hsl(${Math.random()*360},100%,50%)`;
+        div.style.setProperty("--x",(Math.random()*200-100)+"px");
+        div.style.setProperty("--y",(Math.random()*200-100)+"px");
+        document.querySelector(".phone").appendChild(div);
+        setTimeout(()=>div.remove(),1000);
+    }
+}
+</script>
+
+</body>
+</html>
